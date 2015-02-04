@@ -176,3 +176,36 @@ def fid_smc(n_meas, K, n_qubits = 1, n_trials=100, n_particles = 1000, n_rec = 1
         'fidelity_DST': fidelity_DST,
         'timing'  : timing
     }
+
+def sim_qubit_fid(n_meas, K, meas_dist, n_trials=100, n_particles=1000,
+                  n_rec=15):
+    """Calculates the average fidelity of the optimal estimator (approximated by
+    SMC) averaged over Haar random pure states and a random sample of
+    measurement outcomes. The estimator is calculated at a given number of
+    interim times throughout the tomographic process.
+
+    :param n_meas:      The number of copies of the system given in each
+                        tomographic run
+    :type n_meas:       Integer
+    :param K:           The number of measurement outcomes to average the
+                        fidelity over for each copy of the system in a
+                        tomographic run
+    :type K:            Integer
+    :param meas_dist:   Object defining the distribution from which to draw
+                        measurement directions (must have function `sample(n)`
+                        that returns n samples from the distribution)
+    :type meas_dist:    Distribution
+    :param n_trials:    The number of tomographic runs (aka samples from the
+                        pure state prior) the fidelity is averaged over
+    :type n_trials:     Integer
+    :param n_particles: Number of SMC particles to use
+    :type n_particles:  Integer
+    :param n_rec:       Number of places to record average fidelity (on a log
+                        scale)
+    :type n_rec:        Integer
+    :returns:           An array with the calculated average fidelities at the
+                        specified times for all tomographic runs
+    :return type:       numpy.array(n_trials, n_rec)
+
+    """
+    return np.zeros((n_trials, n_rec))  # Dummy return value
