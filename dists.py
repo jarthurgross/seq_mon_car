@@ -7,16 +7,21 @@ from __future__ import division, print_function
 import numpy as np
 import scipy.linalg as la
 from bloch_distribution.sampling import get_state_samples
+from .model import HaarTestModel
 
 class HaarDistribution(object):
-    def __init__(self, n_qubits = 1):
+    """This object doesn't return elements of C^2. To get state vectors, use
+    StateHaarDistribution.
+
+    """
+    def __init__(self, n_qubits=1):
         self.dim = int(2**n_qubits)
     
     @property
     def n_rvs(self):
         return 2*self.dim-2
 
-    def sample(self, n = 1):
+    def sample(self, n=1):
         
         # see e.g. http://arxiv.org/abs/math-ph/0609050v2
         
@@ -41,7 +46,22 @@ class HaarDistribution(object):
             samples[idx,:] = np.concatenate(((foo[:-1]).real,(foo[:-1]).imag))
         
         return samples
-    
+
+class StateHaarDistribution(HaarDistribution):
+    """This class should return vectors in C^2 as samples.
+
+    """
+
+    def __init__(self, n_qubits=1):
+        self.model = HaarTestModel(n_qubits=n_qubits)
+        super(StateHaarDistribution, self).__init__(n_qubits=n_qubits)
+
+    def sample(self, n=1):
+        samples = [super(StateHaarDistribution, self).sample() for m in
+                   xrange(n)]
+        return np.array([self.model.param2vec(sample)[0] for sample in
+                         samples]).T
+
 class MUBDistribution(object):
     def __init__(self):
             self.vecs = np.array([[np.sqrt(2),0],[1,1],[1,1j]])/np.sqrt(2)
@@ -50,7 +70,7 @@ class MUBDistribution(object):
     def n_rvs(self):
         pass
 
-    def sample(self, n = 1):
+    def sample(self, n=1):
         
         samples = 1j*np.zeros([n,2])
         
@@ -59,7 +79,11 @@ class MUBDistribution(object):
             samples[idx,:] = self.vecs[idr,:]
         
         return samples
-    
+
+class TransposedMUBDistribution(MUBDistribution):
+    def sample(self, n=1):
+        return super(TransposedMUBDistribution, self).sample(n).T
+
 class WeakMeasDistribution(object):
     def __init__(self, bounds = [-8,8], eps = 0.05, res = 100):
         self.bounds = bounds

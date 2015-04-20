@@ -13,7 +13,7 @@ import scipy.linalg as la
 import time
 
 
-def fid_smc(n_meas, K, n_qubits = 1, n_trials=100, n_particles = 1000, n_rec = 15):
+def fid_smc(n_meas, K, n_qubits=1, n_trials=100, n_particles=1000, n_rec=15):
     """
     Evaluates the average fidelity incurred by using sequential Monte Carlo (SMC)
     to estimate pure states.
@@ -177,7 +177,7 @@ def fid_smc(n_meas, K, n_qubits = 1, n_trials=100, n_particles = 1000, n_rec = 1
         'timing'  : timing
     }
 
-def sim_qubit_fid(n_meas, K, meas_dist, n_trials=100, n_particles=1000,
+def sim_qubit_fid(n_meas, n_meas_rep, meas_dist, n_trials=100, n_particles=1000,
                   n_rec=15):
     """Calculates the average fidelity of the optimal estimator (approximated by
     SMC) averaged over Haar random pure states and a random sample of
@@ -187,14 +187,14 @@ def sim_qubit_fid(n_meas, K, meas_dist, n_trials=100, n_particles=1000,
     :param n_meas:      The number of copies of the system given in each
                         tomographic run
     :type n_meas:       Integer
-    :param K:           The number of measurement outcomes to average the
+    :param n_meas_rep:  The number of measurement outcomes to average the
                         fidelity over for each copy of the system in a
                         tomographic run
-    :type K:            Integer
+    :type n_meas_rep:   Integer
     :param meas_dist:   Object defining the distribution from which to draw
-                        measurement directions (must have function `sample(n)`
-                        that returns n samples from the distribution)
-    :type meas_dist:    Distribution
+                        measurement directions
+    :type meas_dist:    Object possessing `sample(n)` function that returns a
+                        numpy.array((2, n)) of unit vectors in C^2
     :param n_trials:    The number of tomographic runs (aka samples from the
                         pure state prior) the fidelity is averaged over
     :type n_trials:     Integer
@@ -205,7 +205,74 @@ def sim_qubit_fid(n_meas, K, meas_dist, n_trials=100, n_particles=1000,
     :type n_rec:        Integer
     :returns:           An array with the calculated average fidelities at the
                         specified times for all tomographic runs
-    :return type:       numpy.array(n_trials, n_rec)
+    :return type:       numpy.array((n_trials, n_rec))
 
     """
-    return np.zeros((n_trials, n_rec))  # Dummy return value
+    n_qubits = 1    # This function isn't guaranteed to generalize by changing
+                    # this value, but it is included here to aid readability and
+                    # aid any future generalization efforts
+    dim = 2*n_qubits
+    # Record data on a logarithmic scale
+    rec_idxs = np.unique(np.round(np.logspace(0, np.log10(n_meas), n_rec)))
+    n_rec = rec_idxs.shape[0]
+
+    # Allocate result array
+    fidelities = np.empty((n_trials, n_rec))
+
+    # Instantiate model and state prior
+    model = HaarTestModel(n_qubits=n_qubits)
+    prior = HaarDistribution(n_qubits=n_qubits)
+
+    # Sample all the measurement directions used at once (since some samplers
+    # might be more efficient doing things this way)
+    raw_meas_dirs = meas_dist.sample(n_trials*n_meas)
+    # Reshape the measurement directions to be a n_trials x n_meas array of unit
+    # vectors in C^2
+    meas_dirs = np.reshape(raw_meas_dirs.T, (n_trials, n_meas, 2))
+
+    for trial_idx in xrange(n_trials):
+
+        # Pick a random true state and instantiate the Bayes updater
+        true_state = prior.sample()
+        true_vec = model.param2vec(true_state)
+
+        updater = SMCUpdater(model, n_particles, prior,
+                             resampler=LiuWestResampler(a=0.95, h=None))
+
+        rec_idx = 0
+        for meas_idx in xrange(n_meas):
+            meas_dir = meas_dirs[trial_idx, meas_idx]
+
+            # Set the experimental parameters for the measurement
+            expparams = np.array([(meas_dir, n_meas_rep)],
+                                 dtype=model.expparams_dtype)
+
+            # Simulate data and update
+            data = model.simulate_experiment(true_state, expparams)
+            updater.update(data, expparams)
+
+            if meas_idx + 1 in rec_idxs:
+                # Generate the estimated state -> average then maximal
+                # eigenvector
+
+                weights = updater.particle_weights
+                locs = updater.particle_locations
+
+                avg_state = 1j*np.zeros([dim, dim])
+
+                for idx_locs in xrange(n_particles):
+                    psi = model.param2vec(locs[idx_locs][np.newaxis])
+                    avg_state += weights[idx_locs]*np.outer(psi, psi.conj())
+
+                eigs = la.eig(avg_state)
+                max_eig = eigs[1][:, np.argmax(eigs[0])]
+
+                fidelities[trial_idx, rec_idx] = model.fidelity(true_vec,
+                                                                max_eig)
+
+                rec_idx += 1
+
+        # Give progress updates
+        print(100 * ((trial_idx + 1) / n_trials))
+
+    return fidelities
