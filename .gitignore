@@ -3,3 +3,5 @@ seq_mon_car.egg-info/*
 build/*
 dist/*
 *.pyc
+
+/doc/_*
