@@ -1,1 +1,5 @@
+seq_mon_car.egg-info/*
+.eggs/*
+build/*
+dist/*
 *.pyc
