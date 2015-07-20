@@ -7,7 +7,7 @@ from __future__ import division, print_function
 import numpy as np
 import scipy.linalg as la
 from bloch_distribution.sampling import get_state_samples
-from .model import HaarTestModel
+from model import HaarTestModel
 
 class HaarDistribution(object):
     """This object doesn't return elements of C^2. To get state vectors, use

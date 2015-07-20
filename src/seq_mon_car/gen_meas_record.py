@@ -5,7 +5,7 @@ estimators for comparison purposes
 
 from __future__ import division, print_function
 import numpy as np
-from .model import HaarTestModel
+from model import HaarTestModel
 from qubit_dst.dst_povm_sampling import DSTDistribution
 from qinfer.smc import SMCUpdater
 from qinfer.resamplers import LiuWestResampler

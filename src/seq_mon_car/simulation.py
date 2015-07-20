@@ -4,8 +4,8 @@
 
 from __future__ import division, print_function
 import numpy as np
-from .model import HaarTestModel
-from .dists import HaarDistribution, MUBDistribution, WeakMeasDistribution
+from model import HaarTestModel
+from dists import HaarDistribution, MUBDistribution, WeakMeasDistribution
 from qubit_dst.dst_povm_sampling import DSTDistribution
 from qinfer.smc import SMCUpdater
 from qinfer.resamplers import LiuWestResampler
@@ -15,21 +15,23 @@ import time
 
 def fid_smc(n_meas, K, n_qubits=1, n_trials=100, n_particles=1000, n_rec=15):
     """
-    Evaluates the average fidelity incurred by using sequential Monte Carlo (SMC)
-    to estimate pure states.
+    Evaluates the average fidelity incurred by using sequential Monte Carlo
+    (SMC) to estimate pure states.
 
-    Parameters
-    ----------
-    n_meas: int
-        Number of different measurements.
-    K : int
-        Number of single shot measurements.
-    n_trials : int
-        Number of times to run the SMC estimation procedure.
-    n_particles : int
-        Number of SMC particles to use.
-    n_rec : int
-        Number of place to record data (on a log scale)
+    :param n_meas:      The number of copies of the system given in each
+                        tomographic run
+    :type n_meas:       Integer
+    :param K:           Number of single-shot measurements
+    :type K:            Integer
+    :param n_trials:    Number of times to run the SMC estimation procedure.
+    :type n_trials:     Integer
+    :param n_particles: Number of SMC particles to use.
+    :type n_particles:  Integer
+    :param n_rec:       Number of place to record data (on a log scale)
+    :type n_rec:        Integer
+    :returns:           Dictionary of various fidelities and timings
+    :return type:       Dictionary
+
     """
     dim = int(2**n_qubits)
     # Record data on a logarithmic scale
@@ -179,8 +181,8 @@ def fid_smc(n_meas, K, n_qubits=1, n_trials=100, n_particles=1000, n_rec=15):
 
 def sim_qubit_fid(n_meas, n_meas_rep, meas_dist, n_trials=100, n_particles=1000,
                   n_rec=15):
-    """Calculates the average fidelity of the optimal estimator (approximated by
-    SMC) averaged over Haar random pure states and a random sample of
+    r"""Calculates the average fidelity of the optimal estimator (approximated
+    by SMC) averaged over Haar random pure states and a random sample of
     measurement outcomes. The estimator is calculated at a given number of
     interim times throughout the tomographic process.
 
@@ -194,7 +196,8 @@ def sim_qubit_fid(n_meas, n_meas_rep, meas_dist, n_trials=100, n_particles=1000,
     :param meas_dist:   Object defining the distribution from which to draw
                         measurement directions
     :type meas_dist:    Object possessing `sample(n)` function that returns a
-                        numpy.array((2, n)) of unit vectors in C^2
+                        numpy.array((2, n)) of unit vectors in
+                        :math:`\mathbb{C}^2`
     :param n_trials:    The number of tomographic runs (aka samples from the
                         pure state prior) the fidelity is averaged over
     :type n_trials:     Integer
